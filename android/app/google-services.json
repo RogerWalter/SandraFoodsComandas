@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "854622443979",
+    "firebase_url": "https://comandas-5e2ea-default-rtdb.firebaseio.com",
+    "project_id": "comandas-5e2ea",
+    "storage_bucket": "comandas-5e2ea.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:854622443979:android:c0d5df5b455241bd87fe4e",
+        "android_client_info": {
+          "package_name": "com.ssoft.comandas_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "854622443979-i3aatf37rvqgm7sa15ofuvfmkt7dmpug.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBzgRpoFWEyecyfoGaQASiKic6lxCc4kE8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "854622443979-i3aatf37rvqgm7sa15ofuvfmkt7dmpug.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "854622443979-138j8r55airvv23kam1b28pmvurbbnio.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.ssoft.comandasApp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
