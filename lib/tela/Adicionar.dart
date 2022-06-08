@@ -1859,10 +1859,28 @@ class _AdicionarState extends State<Adicionar> {
                                                 }
                                                 else
                                                 {
-                                                  _obs_cozinha = _controllerObsCozinha.text;
-                                                  _blc_nome_cli = _ctlNomeBalc.text;
-                                                  Navigator.of(context).pop();
-                                                  _registra_itens_balcao();
+                                                  if(_tipo_pagamento == -1){
+                                                    final snackBar = SnackBar(
+                                                      content: const Text('Informe um tipo de pagamento!', style: TextStyle(color: Colors.white),),
+                                                      backgroundColor: cores.corLaranjaSF,
+                                                      duration: Duration(seconds: 2),
+                                                      action: SnackBarAction(
+                                                        label: 'Ok',
+                                                        textColor: cores.corMarromSF,
+                                                        onPressed: () {
+                                                          // Some code to undo the change.
+                                                        },
+                                                      ),
+                                                    );
+                                                    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                                                  }
+                                                  else
+                                                  {
+                                                    _obs_cozinha = _controllerObsCozinha.text;
+                                                    _blc_nome_cli = _ctlNomeBalc.text;
+                                                    Navigator.of(context).pop();
+                                                    _registra_itens_balcao();
+                                                  }
                                                 }
                                               },
                                               child: const Text('Confirmar',style: TextStyle(fontSize: 16, color: const Color(0xffff6900), fontWeight: FontWeight.bold))
@@ -2385,15 +2403,33 @@ class _AdicionarState extends State<Adicionar> {
                                               }
                                               else
                                               {
-                                                _obs_cozinha = _controllerObsCozinha.text;
-                                                _ent_nome_cli = _ctlNome.text;
-                                                _ent_celu_cli = _ctlCelular.text;
-                                                _ent_rua_cli = _ctlRua.text;
-                                                _ent_nume_cli = _ctlNumero.text;
-                                                _ent_bair_cli = _ctlBairro.text;
-                                                _ent_refe_cli = _ctlRef.text;
-                                                Navigator.of(context).pop();
-                                                _registra_itens_entrega();
+                                                if(_tipo_pagamento == -1){
+                                                  final snackBar = SnackBar(
+                                                    content: const Text('Informe um tipo de pagamento!', style: TextStyle(color: Colors.white),),
+                                                    backgroundColor: cores.corLaranjaSF,
+                                                    duration: Duration(seconds: 2),
+                                                    action: SnackBarAction(
+                                                      label: 'Ok',
+                                                      textColor: cores.corMarromSF,
+                                                      onPressed: () {
+                                                        // Some code to undo the change.
+                                                      },
+                                                    ),
+                                                  );
+                                                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                                                }
+                                                else
+                                                {
+                                                  _obs_cozinha = _controllerObsCozinha.text;
+                                                  _ent_nome_cli = _ctlNome.text;
+                                                  _ent_celu_cli = _ctlCelular.text;
+                                                  _ent_rua_cli = _ctlRua.text;
+                                                  _ent_nume_cli = _ctlNumero.text;
+                                                  _ent_bair_cli = _ctlBairro.text;
+                                                  _ent_refe_cli = _ctlRef.text;
+                                                  Navigator.of(context).pop();
+                                                  _registra_itens_entrega();
+                                                }
                                               }
                                             },
                                             child: const Text('Confirmar',style: TextStyle(fontSize: 16, color: const Color(0xffff6900), fontWeight: FontWeight.bold))
@@ -2794,20 +2830,41 @@ class _AdicionarState extends State<Adicionar> {
       {
         String item_desc = _remove_diacritics(_listaItensMesa[i].desc_item);
         String item_mostrar = item_desc;
-        if(item_desc.length > 36){
-          item_mostrar = item_desc.substring(0,36);
+        if(item_desc.length > 20){
+          item_mostrar = item_desc.replaceAll("TAPIOCA", "TAP")
+              .replaceAll("CREPES", "CRE")
+              .replaceAll("PASTEL", "PAS")
+              .replaceAll("HAMB.", "HAM")
+              .replaceAll("CROCANTE", "")
+              .replaceAll("AZEITONA", "AZE")
+              .replaceAll("TOMATE", "TOM")
+              .replaceAll("CALABRESA", "CAL")
+              .replaceAll("CATUPIRY", "CAT")
+              .replaceAll("FRANGO", "FRA")
+              .replaceAll(" COM ", "")
+              .replaceAll(" DE ", "")
+              .replaceAll("QUEIJO", "QJO")
+              .replaceAll("CONDENSADO", "COND")
+              .replaceAll("QUEIJO", "QJO")
+              .replaceAll("CHOCOLATE", "CHOC")
+              .replaceAll("PRESUNTO", "PRES")
+              .replaceAll("CHOCOLATE", "CHOC")
+              .replaceAll(" E ", "")
+              .replaceAll("GRANDE", "G")
+              .replaceAll("MÉDIA", "M")
+              .replaceAll(" PALITO ", " ");
         }
         printer.row([
           PosColumn(
             text: _listaItensMesa[i].qtd.toString(),
             width: 1,
-            styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size3,),
+            styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
           ),
           PosColumn(
             text: item_mostrar,
             //text: _remove_diacritics(_listaItensMesa[i].desc_item),
             width: 11,
-            styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size3),
+            styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
           ),
           /*PosColumn(
             text: NumberFormat.simpleCurrency(locale: 'pt_BR').format(_listaItensMesa[i].valor_tot),
@@ -2826,7 +2883,7 @@ class _AdicionarState extends State<Adicionar> {
               PosColumn(
                 text: _remove_diacritics(_listaItensMesa[i].obs_adici).replaceAll("\n", ", "),
                 width: 11,
-                styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2,),
+                styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
               ),
               /*PosColumn(
                 text: "",
@@ -2934,19 +2991,39 @@ class _AdicionarState extends State<Adicionar> {
     {
       String item_desc = _remove_diacritics(_listaItensMesa[i].desc_item);
       String item_mostrar = item_desc;
-      if(item_desc.length > 36){
-        item_mostrar = item_desc.substring(0,36);
+      if(item_desc.length > 20){
+        item_mostrar = item_desc.replaceAll("TAPIOCA", "TAP")
+            .replaceAll("CREPES", "CRE")
+            .replaceAll("PASTEL", "PAS")
+            .replaceAll("HAMB.", "HAM")
+            .replaceAll("CROCANTE", "")
+            .replaceAll("AZEITONA", "AZE")
+            .replaceAll("CALABRESA", "CAL")
+            .replaceAll("CATUPIRY", "CAT")
+            .replaceAll("FRANGO", "FRA")
+            .replaceAll(" COM ", "")
+            .replaceAll(" DE ", "")
+            .replaceAll("QUEIJO", "QJO")
+            .replaceAll("CONDENSADO", "COND")
+            .replaceAll("QUEIJO", "QJO")
+            .replaceAll("CHOCOLATE", "CHOC")
+            .replaceAll("PRESUNTO", "PRES")
+            .replaceAll("CHOCOLATE", "CHOC")
+            .replaceAll(" E ", "")
+            .replaceAll("GRANDE", "G")
+            .replaceAll("MÉDIA", "M")
+            .replaceAll(" PALITO ", " ");
       }
       printer.row([
         PosColumn(
           text: _listaItensMesa[i].qtd.toString(),
           width: 1,
-          styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size3),
+          styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
         ),
         PosColumn(
           text: item_mostrar,
           width: 11,
-          styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size3),
+          styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
         ),
         /*PosColumn(
           text: NumberFormat.simpleCurrency(locale: 'pt_BR').format(_listaItensMesa[i].valor_tot),
@@ -3103,19 +3180,39 @@ class _AdicionarState extends State<Adicionar> {
     {
       String item_desc = _remove_diacritics(_listaItensMesa[i].desc_item);
       String item_mostrar = item_desc;
-      if(item_desc.length > 36){
-        item_mostrar = item_desc.substring(0,36);
+      if(item_desc.length > 20){
+        item_mostrar = item_desc.replaceAll("TAPIOCA", "TAP")
+                                .replaceAll("CREPES", "CRE")
+                                .replaceAll("PASTEL", "PAS")
+                                .replaceAll("HAMB.", "HAM")
+                                .replaceAll("CROCANTE", "")
+                                .replaceAll("AZEITONA", "AZE")
+                                .replaceAll("CALABRESA", "CAL")
+                                .replaceAll("CATUPIRY", "CAT")
+                                .replaceAll("FRANGO", "FRA")
+                                .replaceAll(" COM ", "")
+                                .replaceAll(" DE ", "")
+                                .replaceAll("QUEIJO", "QJO")
+                                .replaceAll("CONDENSADO", "COND")
+                                .replaceAll("QUEIJO", "QJO")
+                                .replaceAll("CHOCOLATE", "CHOC")
+                                .replaceAll("PRESUNTO", "PRES")
+                                .replaceAll("CHOCOLATE", "CHOC")
+                                .replaceAll(" E ", "")
+                                .replaceAll("GRANDE", "G")
+                                .replaceAll("MÉDIA", "M")
+                                .replaceAll(" PALITO ", " ");
       }
       printer.row([
         PosColumn(
           text: _listaItensMesa[i].qtd.toString(),
           width: 1,
-          styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size3),
+          styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
         ),
         PosColumn(
           text: item_mostrar,
           width: 11,
-          styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size3),
+          styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
         ),
         /*PosColumn(
           text: NumberFormat.simpleCurrency(locale: 'pt_BR').format(_listaItensMesa[i].valor_tot),

@@ -98,7 +98,14 @@ class _MesasState extends State<Mesas> {
 
   _salvarMesaFirebase(int _qtd_mesas) async{
     await Firebase.initializeApp();
-    for(int i = 1; i <=_qtd_mesas; i++ )
+
+    final ref = FirebaseDatabase.instance.ref();
+    final snapshot = await ref.child("mesas").get();
+    if (snapshot.exists) {
+      _recupera_infos_mesas_existentes(_parametros.nome_garcom, _parametros.qtd_colunas);
+    }
+    else{
+      for(int i = 1; i <=_qtd_mesas; i++ )
       {
         Mesa _mesa = Mesa();
         _mesa.numero = i;
@@ -109,7 +116,8 @@ class _MesasState extends State<Mesas> {
         final ref = FirebaseDatabase.instance.ref("mesas/" + i.toString());
         await ref.set(json);
       }
-    _recupera_infos_mesas_existentes(_parametros.nome_garcom, _parametros.qtd_colunas);
+      _recupera_infos_mesas_existentes(_parametros.nome_garcom, _parametros.qtd_colunas);
+    }
   }
 
   @override
@@ -121,7 +129,8 @@ class _MesasState extends State<Mesas> {
           title: const Text('Mesas e Comandas', style: TextStyle(color: Colors.white)),
           actions: <Widget>[
             IconButton(
-              icon: const Icon(Icons.build, color: Color(0xffff6900),),
+              icon: const Icon
+                (Icons.build, color: Color(0xffff6900),),
               tooltip: 'Configurações',
               onPressed: () {
                 setState(() {
