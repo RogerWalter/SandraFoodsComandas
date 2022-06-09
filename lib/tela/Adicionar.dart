@@ -2826,52 +2826,64 @@ class _AdicionarState extends State<Adicionar> {
         styles: PosStyles(align: PosAlign.right, underline: true, bold: true),
       ),*/
     ]);
+    String _linha1 = "";
+    String _linha2 = "";
+    int _parametro_num_char = 0;
     for(int i = 0; i < _listaItensMesa.length; i++)
       {
+        _parametro_num_char = 0;
         String item_desc = _remove_diacritics(_listaItensMesa[i].desc_item);
         String item_mostrar = item_desc;
-        if(item_desc.length > 20){
-          item_mostrar = item_desc.replaceAll("TAPIOCA", "TAP")
-              .replaceAll("CREPES", "CRE")
-              .replaceAll("PASTEL", "PAS")
-              .replaceAll("HAMB.", "HAM")
-              .replaceAll("CROCANTE", "")
-              .replaceAll("AZEITONA", "AZE")
-              .replaceAll("TOMATE", "TOM")
-              .replaceAll("CALABRESA", "CAL")
-              .replaceAll("CATUPIRY", "CAT")
-              .replaceAll("FRANGO", "FRA")
-              .replaceAll(" COM ", "")
-              .replaceAll(" DE ", "")
-              .replaceAll("QUEIJO", "QJO")
-              .replaceAll("CONDENSADO", "COND")
-              .replaceAll("QUEIJO", "QJO")
-              .replaceAll("CHOCOLATE", "CHOC")
-              .replaceAll("PRESUNTO", "PRES")
-              .replaceAll("CHOCOLATE", "CHOC")
-              .replaceAll(" E ", "")
-              .replaceAll("GRANDE", "G")
-              .replaceAll("MÉDIA", "M")
-              .replaceAll(" PALITO ", " ");
+        if(item_desc.length > 19){
+          _linha1 = item_desc.substring(0, 19);
+          _linha2 = item_desc.substring(19, item_desc.length);
+          _parametro_num_char = 1;
+
+          printer.row([
+            PosColumn(
+              text: _listaItensMesa[i].qtd.toString(),
+              width: 1,
+              styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
+            ),
+            PosColumn(
+              text: item_mostrar,
+              //text: _remove_diacritics(_listaItensMesa[i].desc_item),
+              width: 11,
+              styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
+            ),
+          ]);
         }
-        printer.row([
-          PosColumn(
-            text: _listaItensMesa[i].qtd.toString(),
-            width: 1,
-            styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
-          ),
-          PosColumn(
-            text: item_mostrar,
-            //text: _remove_diacritics(_listaItensMesa[i].desc_item),
-            width: 11,
-            styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
-          ),
-          /*PosColumn(
-            text: NumberFormat.simpleCurrency(locale: 'pt_BR').format(_listaItensMesa[i].valor_tot),
-            width: 3,
-            styles: PosStyles(align: PosAlign.right, height: PosTextSize.size2),
-          ),*/
-        ]);
+        else{
+          printer.row([
+            PosColumn(
+              text: _listaItensMesa[i].qtd.toString(),
+              width: 1,
+              styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
+            ),
+            PosColumn(
+              text: item_mostrar,
+              //text: _remove_diacritics(_listaItensMesa[i].desc_item),
+              width: 11,
+              styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
+            ),
+          ]);
+        }
+
+        if(_parametro_num_char == 1)
+        {
+          printer.row([
+            PosColumn(
+              text: " ",
+              width: 1,
+              styles: PosStyles(align: PosAlign.left, bold: true),
+            ),
+            PosColumn(
+              text: _remove_diacritics(_linha2),
+              width: 11,
+              styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
+            ),
+          ]);
+        }
         if(!_listaItensMesa[i].obs_adici.isEmpty && _listaItensMesa[i].obs_adici != "")
           {
             printer.row([
@@ -2885,33 +2897,10 @@ class _AdicionarState extends State<Adicionar> {
                 width: 11,
                 styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
               ),
-              /*PosColumn(
-                text: "",
-                width: 3,
-                styles: PosStyles(align: PosAlign.left),
-              ),*/
             ]);
           }
       }
     printer.text("----------------------------------------");
-    /*printer.row([
-      PosColumn(
-          text: 'TOTAL',
-          width: 3,
-          styles: PosStyles(
-            height: PosTextSize.size2,
-            width: PosTextSize.size2,
-          )),
-      PosColumn(
-          text: NumberFormat.simpleCurrency(locale: 'pt_BR').format(_calcula_total_inserir_mesa()),
-          width: 9,
-          styles: PosStyles(
-            align: PosAlign.left,
-            height: PosTextSize.size2,
-            width: PosTextSize.size2,
-          )),
-    ]);
-    printer.text("========================================");*/
     printer.text("Powered by SSoft",
         styles: PosStyles(
             align: PosAlign.center
@@ -2987,50 +2976,64 @@ class _AdicionarState extends State<Adicionar> {
         styles: PosStyles(align: PosAlign.center, underline: true, bold: true),
       ),
     ]);
+    String _linha1 = "";
+    String _linha2 = "";
+    int _parametro_num_char = 0;
     for(int i = 0; i < _listaItensMesa.length; i++)
     {
+      _parametro_num_char = 0;
       String item_desc = _remove_diacritics(_listaItensMesa[i].desc_item);
       String item_mostrar = item_desc;
-      if(item_desc.length > 20){
-        item_mostrar = item_desc.replaceAll("TAPIOCA", "TAP")
-            .replaceAll("CREPES", "CRE")
-            .replaceAll("PASTEL", "PAS")
-            .replaceAll("HAMB.", "HAM")
-            .replaceAll("CROCANTE", "")
-            .replaceAll("AZEITONA", "AZE")
-            .replaceAll("CALABRESA", "CAL")
-            .replaceAll("CATUPIRY", "CAT")
-            .replaceAll("FRANGO", "FRA")
-            .replaceAll(" COM ", "")
-            .replaceAll(" DE ", "")
-            .replaceAll("QUEIJO", "QJO")
-            .replaceAll("CONDENSADO", "COND")
-            .replaceAll("QUEIJO", "QJO")
-            .replaceAll("CHOCOLATE", "CHOC")
-            .replaceAll("PRESUNTO", "PRES")
-            .replaceAll("CHOCOLATE", "CHOC")
-            .replaceAll(" E ", "")
-            .replaceAll("GRANDE", "G")
-            .replaceAll("MÉDIA", "M")
-            .replaceAll(" PALITO ", " ");
+      if(item_desc.length > 19){
+        _linha1 = item_desc.substring(0, 19);
+        _linha2 = item_desc.substring(19, item_desc.length);
+        _parametro_num_char = 1;
+
+        printer.row([
+          PosColumn(
+            text: _listaItensMesa[i].qtd.toString(),
+            width: 1,
+            styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
+          ),
+          PosColumn(
+            text: item_mostrar,
+            //text: _remove_diacritics(_listaItensMesa[i].desc_item),
+            width: 11,
+            styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
+          ),
+        ]);
       }
-      printer.row([
-        PosColumn(
-          text: _listaItensMesa[i].qtd.toString(),
-          width: 1,
-          styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
-        ),
-        PosColumn(
-          text: item_mostrar,
-          width: 11,
-          styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
-        ),
-        /*PosColumn(
-          text: NumberFormat.simpleCurrency(locale: 'pt_BR').format(_listaItensMesa[i].valor_tot),
-          width: 3,
-          styles: PosStyles(align: PosAlign.right),
-        ),*/
-      ]);
+      else{
+        printer.row([
+          PosColumn(
+            text: _listaItensMesa[i].qtd.toString(),
+            width: 1,
+            styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
+          ),
+          PosColumn(
+            text: item_mostrar,
+            //text: _remove_diacritics(_listaItensMesa[i].desc_item),
+            width: 11,
+            styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
+          ),
+        ]);
+      }
+
+      if(_parametro_num_char == 1)
+      {
+        printer.row([
+          PosColumn(
+            text: " ",
+            width: 1,
+            styles: PosStyles(align: PosAlign.left, bold: true),
+          ),
+          PosColumn(
+            text: _remove_diacritics(_linha2),
+            width: 11,
+            styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
+          ),
+        ]);
+      }
       if(!_listaItensMesa[i].obs_adici.isEmpty && _listaItensMesa[i].obs_adici != "")
       {
         printer.row([
@@ -3041,28 +3044,11 @@ class _AdicionarState extends State<Adicionar> {
           ),
           PosColumn(
             text: _remove_diacritics(_listaItensMesa[i].obs_adici).replaceAll("\n", ", "),
-            width: 8,
-            styles: PosStyles(align: PosAlign.left, bold: true),
-          ),
-          PosColumn(
-            text: "",
-            width: 3,
-            styles: PosStyles(align: PosAlign.left),
+            width: 11,
+            styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
           ),
         ]);
       }
-      printer.row([
-        PosColumn(
-          text: "Valor: ",
-          width: 6,
-          styles: PosStyles(align: PosAlign.left, bold: true),
-        ),
-        PosColumn(
-          text: NumberFormat.simpleCurrency(locale: 'pt_BR').format(_listaItensMesa[i].valor_tot),
-          width: 6,
-          styles: PosStyles(align: PosAlign.right, bold: true),
-        ),
-      ]);
     }
     printer.text("----------------------------------------");
     String _valor_mostrar = "";
@@ -3176,50 +3162,64 @@ class _AdicionarState extends State<Adicionar> {
         styles: PosStyles(align: PosAlign.center, underline: true, bold: true),
       ),
     ]);
+    String _linha1 = "";
+    String _linha2 = "";
+    int _parametro_num_char = 0;
     for(int i = 0; i < _listaItensMesa.length; i++)
     {
+      _parametro_num_char = 0;
       String item_desc = _remove_diacritics(_listaItensMesa[i].desc_item);
       String item_mostrar = item_desc;
-      if(item_desc.length > 20){
-        item_mostrar = item_desc.replaceAll("TAPIOCA", "TAP")
-                                .replaceAll("CREPES", "CRE")
-                                .replaceAll("PASTEL", "PAS")
-                                .replaceAll("HAMB.", "HAM")
-                                .replaceAll("CROCANTE", "")
-                                .replaceAll("AZEITONA", "AZE")
-                                .replaceAll("CALABRESA", "CAL")
-                                .replaceAll("CATUPIRY", "CAT")
-                                .replaceAll("FRANGO", "FRA")
-                                .replaceAll(" COM ", "")
-                                .replaceAll(" DE ", "")
-                                .replaceAll("QUEIJO", "QJO")
-                                .replaceAll("CONDENSADO", "COND")
-                                .replaceAll("QUEIJO", "QJO")
-                                .replaceAll("CHOCOLATE", "CHOC")
-                                .replaceAll("PRESUNTO", "PRES")
-                                .replaceAll("CHOCOLATE", "CHOC")
-                                .replaceAll(" E ", "")
-                                .replaceAll("GRANDE", "G")
-                                .replaceAll("MÉDIA", "M")
-                                .replaceAll(" PALITO ", " ");
+      if(item_desc.length > 19){
+        _linha1 = item_desc.substring(0, 19);
+        _linha2 = item_desc.substring(19, item_desc.length);
+        _parametro_num_char = 1;
+
+        printer.row([
+          PosColumn(
+            text: _listaItensMesa[i].qtd.toString(),
+            width: 1,
+            styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
+          ),
+          PosColumn(
+            text: item_mostrar,
+            //text: _remove_diacritics(_listaItensMesa[i].desc_item),
+            width: 11,
+            styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
+          ),
+        ]);
       }
-      printer.row([
-        PosColumn(
-          text: _listaItensMesa[i].qtd.toString(),
-          width: 1,
-          styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
-        ),
-        PosColumn(
-          text: item_mostrar,
-          width: 11,
-          styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
-        ),
-        /*PosColumn(
-          text: NumberFormat.simpleCurrency(locale: 'pt_BR').format(_listaItensMesa[i].valor_tot),
-          width: 3,
-          styles: PosStyles(align: PosAlign.right),
-        ),*/
-      ]);
+      else{
+        printer.row([
+          PosColumn(
+            text: _listaItensMesa[i].qtd.toString(),
+            width: 1,
+            styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
+          ),
+          PosColumn(
+            text: item_mostrar,
+            //text: _remove_diacritics(_listaItensMesa[i].desc_item),
+            width: 11,
+            styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
+          ),
+        ]);
+      }
+
+      if(_parametro_num_char == 1)
+      {
+        printer.row([
+          PosColumn(
+            text: " ",
+            width: 1,
+            styles: PosStyles(align: PosAlign.left, bold: true),
+          ),
+          PosColumn(
+            text: _remove_diacritics(_linha2),
+            width: 11,
+            styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
+          ),
+        ]);
+      }
       if(!_listaItensMesa[i].obs_adici.isEmpty && _listaItensMesa[i].obs_adici != "")
       {
         printer.row([
@@ -3230,28 +3230,11 @@ class _AdicionarState extends State<Adicionar> {
           ),
           PosColumn(
             text: _remove_diacritics(_listaItensMesa[i].obs_adici).replaceAll("\n", ", "),
-            width: 8,
-            styles: PosStyles(align: PosAlign.left, bold: true),
-          ),
-          PosColumn(
-            text: "",
-            width: 3,
-            styles: PosStyles(align: PosAlign.left),
+            width: 11,
+            styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
           ),
         ]);
       }
-      printer.row([
-        PosColumn(
-          text: "Valor: ",
-          width: 6,
-          styles: PosStyles(align: PosAlign.left, bold: true),
-        ),
-        PosColumn(
-          text: NumberFormat.simpleCurrency(locale: 'pt_BR').format(_listaItensMesa[i].valor_tot),
-          width: 6,
-          styles: PosStyles(align: PosAlign.right, bold: true),
-        ),
-      ]);
     }
     printer.text("----------------------------------------");
     String _valor_mostrar = "";
