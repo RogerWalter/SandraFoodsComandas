@@ -2846,7 +2846,7 @@ class _AdicionarState extends State<Adicionar> {
               styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
             ),
             PosColumn(
-              text: item_mostrar,
+              text: _remove_diacritics(_linha1),
               //text: _remove_diacritics(_listaItensMesa[i].desc_item),
               width: 11,
               styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
@@ -2996,7 +2996,7 @@ class _AdicionarState extends State<Adicionar> {
             styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
           ),
           PosColumn(
-            text: item_mostrar,
+            text: _remove_diacritics(_linha1),
             //text: _remove_diacritics(_listaItensMesa[i].desc_item),
             width: 11,
             styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
@@ -3182,7 +3182,7 @@ class _AdicionarState extends State<Adicionar> {
             styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
           ),
           PosColumn(
-            text: item_mostrar,
+            text: _remove_diacritics(_linha1),
             //text: _remove_diacritics(_listaItensMesa[i].desc_item),
             width: 11,
             styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
