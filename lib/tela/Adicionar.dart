@@ -2493,10 +2493,19 @@ class _AdicionarState extends State<Adicionar> {
     {
       for(int i = 0; i < _listaItensMesa.length; i++)
       {
-        ItemMesa item = ItemMesa();
-        if(_listaItensExistentesMesa.firstWhere((it) => it.desc_item == _listaItensMesa[i].desc_item && it.obs_adici == _listaItensMesa[i].obs_adici, orElse: () => item) != item)
+        String desc_item_atual = _listaItensMesa[i].desc_item;
+        String obs_item_atual = _listaItensMesa[i].obs_adici;
+        int indice_encontrado = -1;
+        for(int y = 0; y < _listaItensExistentesMesa.length; y++)
+          {
+            if(_listaItensExistentesMesa[y].desc_item == desc_item_atual && _listaItensExistentesMesa[y].obs_adici == obs_item_atual)
+              {
+                indice_encontrado = y;
+              }
+          }
+        if(indice_encontrado != -1)
         {//o item que está sendo inserido já existe na lista, portanto, somamos sua quantidade e valor ao já existente
-          ItemMesa _ja_existe = _listaItensExistentesMesa.firstWhere((it) => it.desc_item == _listaItensExistentesMesa[i].desc_item && it.obs_adici == _listaItensMesa[i].obs_adici);
+          ItemMesa _ja_existe = _listaItensExistentesMesa[indice_encontrado];
           int _indice = _listaItensExistentesMesa.indexOf(_ja_existe);
           num _novo_valor = _ja_existe.valor_tot + _listaItensMesa[i].valor_tot;
           int _nova_qtd = _ja_existe.qtd + _listaItensMesa[i].qtd;
@@ -2849,7 +2858,7 @@ class _AdicionarState extends State<Adicionar> {
               text: _remove_diacritics(_linha1),
               //text: _remove_diacritics(_listaItensMesa[i].desc_item),
               width: 11,
-              styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
+              styles: PosStyles(align: PosAlign.left, height: PosTextSize.size2, width: PosTextSize.size2),
             ),
           ]);
         }
@@ -2864,7 +2873,7 @@ class _AdicionarState extends State<Adicionar> {
               text: item_mostrar,
               //text: _remove_diacritics(_listaItensMesa[i].desc_item),
               width: 11,
-              styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
+              styles: PosStyles(align: PosAlign.left, height: PosTextSize.size2, width: PosTextSize.size2),
             ),
           ]);
         }
@@ -2880,7 +2889,7 @@ class _AdicionarState extends State<Adicionar> {
             PosColumn(
               text: _remove_diacritics(_linha2),
               width: 11,
-              styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
+              styles: PosStyles(align: PosAlign.left, height: PosTextSize.size2, width: PosTextSize.size2),
             ),
           ]);
         }
@@ -2899,8 +2908,8 @@ class _AdicionarState extends State<Adicionar> {
               ),
             ]);
           }
+        printer.text("----------------------------------------");
       }
-    printer.text("----------------------------------------");
     printer.text("Powered by SSoft",
         styles: PosStyles(
             align: PosAlign.center
@@ -2999,7 +3008,7 @@ class _AdicionarState extends State<Adicionar> {
             text: _remove_diacritics(_linha1),
             //text: _remove_diacritics(_listaItensMesa[i].desc_item),
             width: 11,
-            styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
+            styles: PosStyles(align: PosAlign.left, height: PosTextSize.size2, width: PosTextSize.size2),
           ),
         ]);
       }
@@ -3014,7 +3023,7 @@ class _AdicionarState extends State<Adicionar> {
             text: item_mostrar,
             //text: _remove_diacritics(_listaItensMesa[i].desc_item),
             width: 11,
-            styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
+            styles: PosStyles(align: PosAlign.left, height: PosTextSize.size2, width: PosTextSize.size2),
           ),
         ]);
       }
@@ -3030,7 +3039,7 @@ class _AdicionarState extends State<Adicionar> {
           PosColumn(
             text: _remove_diacritics(_linha2),
             width: 11,
-            styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
+            styles: PosStyles(align: PosAlign.left, height: PosTextSize.size2, width: PosTextSize.size2),
           ),
         ]);
       }
@@ -3049,8 +3058,8 @@ class _AdicionarState extends State<Adicionar> {
           ),
         ]);
       }
+      printer.text("----------------------------------------");
     }
-    printer.text("----------------------------------------");
     String _valor_mostrar = "";
     _valor_mostrar = NumberFormat.simpleCurrency(locale: 'pt_BR').format(_calcula_total_inserir_mesa());
     printer.row([
@@ -3185,7 +3194,7 @@ class _AdicionarState extends State<Adicionar> {
             text: _remove_diacritics(_linha1),
             //text: _remove_diacritics(_listaItensMesa[i].desc_item),
             width: 11,
-            styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
+            styles: PosStyles(align: PosAlign.left, height: PosTextSize.size2, width: PosTextSize.size2),
           ),
         ]);
       }
@@ -3200,7 +3209,7 @@ class _AdicionarState extends State<Adicionar> {
             text: item_mostrar,
             //text: _remove_diacritics(_listaItensMesa[i].desc_item),
             width: 11,
-            styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
+            styles: PosStyles(align: PosAlign.left, height: PosTextSize.size2, width: PosTextSize.size2),
           ),
         ]);
       }
@@ -3216,7 +3225,7 @@ class _AdicionarState extends State<Adicionar> {
           PosColumn(
             text: _remove_diacritics(_linha2),
             width: 11,
-            styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
+            styles: PosStyles(align: PosAlign.left, height: PosTextSize.size2, width: PosTextSize.size2),
           ),
         ]);
       }
@@ -3235,8 +3244,8 @@ class _AdicionarState extends State<Adicionar> {
           ),
         ]);
       }
+      printer.text("----------------------------------------");
     }
-    printer.text("----------------------------------------");
     String _valor_mostrar = "";
     String _valor_taxa_mostrar = "";
     _valor_mostrar = NumberFormat.simpleCurrency(locale: 'pt_BR').format(_calcula_total_inserir_mesa() + _valor_taxa);

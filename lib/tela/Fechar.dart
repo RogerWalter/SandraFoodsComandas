@@ -678,6 +678,7 @@ class _FecharState extends State<Fechar> {
     _pagamento_salvar.data = data;
     _pagamento_salvar.pagamento = _tipo_pagamento_dialogo;
     _pagamento_salvar.fechamento = 0;
+
     for(int i = 1; i <= _listaItensMesaParcial.length; i++)
     {
       //VAMOS UNIR O QUE FOR REPETIDO, PARA SALVAR NA SEQUENCIA
