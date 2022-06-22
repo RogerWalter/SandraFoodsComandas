@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:comandas_app/model/ItemCardapio.dart';
 import 'package:comandas_app/model/ItemMesa.dart';
+import 'package:comandas_app/model/Pedido.dart';
 import 'package:comandas_app/model/Mesa.dart';
 import 'package:comandas_app/model/Taxa.dart';
 import 'package:comandas_app/model/Entrega.dart';
@@ -20,6 +21,7 @@ import 'package:esc_pos_printer/esc_pos_printer.dart';
 import 'package:flutter/services.dart';
 import 'package:esc_pos_utils/esc_pos_utils.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
+import 'package:auto_size_text_pk/auto_size_text_pk.dart';
 
 void main() async{
 
@@ -27,7 +29,7 @@ void main() async{
   await Firebase.initializeApp();
   runApp(MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: Adicionar(0, "", "", 1, -1)
+      home: Adicionar(0, "", "", 1, -1, "")
   ));
 }
 class Adicionar extends StatefulWidget {
@@ -36,9 +38,10 @@ class Adicionar extends StatefulWidget {
   int _qtd_vias = 1;
   String? _garcom = "";
   String? _ip_imp = "";
-  int _parametro_tipo_adicionar = -1; //0 - MESA | 1 - ENTREGA | 2 - BALCÃO
+  int _parametro_tipo_adicionar = -1; //0 = MESA | 1 = ENTREGA | 2 = BALCÃO | 3 = ENTREGA (editar)  | 4 = BALCÃO (editar)
+  String? _identificador_pedido = "";
 
-  Adicionar(this._numMesa, this._garcom, this._ip_imp, this._qtd_vias, this._parametro_tipo_adicionar);
+  Adicionar(this._numMesa, this._garcom, this._ip_imp, this._qtd_vias, this._parametro_tipo_adicionar, this._identificador_pedido);
 
   @override
   _AdicionarState createState() => _AdicionarState();
@@ -78,6 +81,8 @@ class _AdicionarState extends State<Adicionar> {
   CustomColors cores = CustomColors();
 
   final List <ItemMesa> _listaItensMesa = [];
+  final List <ItemMesa> _listaItensExistentesPedido= [];
+  final List <Pedido> _listaPedidos = [];
   final List <ItemComanda> _listaItensMesaTotalRelatorio = [];
   final List <ItemMesa> _listaItensExistentesMesa = [];
   final List <ItemCardapio> _listaItens = [];
@@ -105,9 +110,12 @@ class _AdicionarState extends State<Adicionar> {
 
   //BALCÃO
   TextEditingController _ctlNomeBalc = TextEditingController();
+  TextEditingController _ctlCeluBalc = TextEditingController();
   String _blc_nome_cli = "";
+  String _blc_celu_cli = "";
 
   //ENTREGA
+  num _taxa_atualizar_pedido = 0;
   final List <Taxa> _listaTaxas = [];
   Taxa _taxa_selecionada = Taxa();
   num _valor_taxa = 0;
@@ -166,6 +174,34 @@ class _AdicionarState extends State<Adicionar> {
       print("lista completa");
     }
   }
+  _recuperarPedidos() async{
+    final ref = FirebaseDatabase.instance.ref();
+    final snapshot = await ref.child("pedidos").get();
+    if (snapshot.exists) {
+      for(DataSnapshot ds in snapshot.children)
+      {
+        Pedido _itemLista = Pedido();
+        final json = ds.value as Map<dynamic, dynamic>;
+        _itemLista = Pedido.fromJson(json);
+        _listaPedidos.add(_itemLista);
+      }
+    }
+  }
+  _recuperar_itens_pedido(String _identificador) async{
+    _listaItensExistentesPedido.clear();
+    final ref = FirebaseDatabase.instance.ref();
+    final snapshot = await ref.child("itens-pedido/" + _identificador.toString()).get();
+    if (snapshot.exists) {
+      final json = snapshot.value as List;
+      for(DataSnapshot ds in snapshot.children)
+      {
+        ItemMesa _itemLista = ItemMesa();
+        final json = ds.value as Map<dynamic, dynamic>;
+        _itemLista = ItemMesa.fromJson(json);
+        _listaItensExistentesPedido.add(_itemLista);
+      }
+    }
+  }
   _limpar_dialogo() {
     _item_selecionado = ItemCardapio();
     _adicional_selecionado = ItemCardapio();
@@ -194,13 +230,21 @@ class _AdicionarState extends State<Adicionar> {
       _titulo_tela = "Adicionar Itens à Mesa " + widget._numMesa.toString();
     if(widget._parametro_tipo_adicionar == 1){
       _titulo_tela = "Itens para Entrega";
-      _recuperarTaxas();
-    }
+      _recuperarTaxas();}
     if(widget._parametro_tipo_adicionar == 2)
       _titulo_tela = "Itens para Balcão";
+    if(widget._parametro_tipo_adicionar == 3){
+      _titulo_tela = "Atualizar Itens Entrega";
+      _recuperar_itens_pedido(widget._identificador_pedido.toString());
+    }
+    if(widget._parametro_tipo_adicionar == 4){
+      _titulo_tela = "Atualizar Itens Balcão";
+      _recuperar_itens_pedido(widget._identificador_pedido.toString());
+    }
 
     _listaItensMesa.clear();
     _recuperarItens();
+    _recuperarPedidos();
     _recupera_itens_mesa();
     _recupera_itens_mesa_existentes();
     _focusNodeDesc.requestFocus();
@@ -1272,7 +1316,13 @@ class _AdicionarState extends State<Adicionar> {
             if(widget._parametro_tipo_adicionar == 1){
               _gerar_dialogo_registrar_entrega();
             }
+            if(widget._parametro_tipo_adicionar == 4){
+              _gerar_dialogo_add_itens_balcao();
             }
+            if(widget._parametro_tipo_adicionar == 3){
+              _gerar_dialogo_add_itens_entrega();
+            }
+          }
           else{
             final snackBar = SnackBar(
               content: const Text('Não existem itens para inserção na mesa', style: TextStyle(color: Colors.white),),
@@ -1701,6 +1751,42 @@ class _AdicionarState extends State<Adicionar> {
                                                   )
                                               )
                                           ),
+                                          Expanded(
+                                              child: Padding(
+                                                  padding: EdgeInsets.all(4),
+                                                  child: Align(
+                                                      child: Container(
+                                                        child: TextField(
+                                                          controller: _ctlCeluBalc,
+                                                          keyboardType: TextInputType.number,
+                                                          textCapitalization: TextCapitalization.characters,
+                                                          textInputAction: TextInputAction.done,
+                                                          cursorColor: cores.corMarromSF,
+                                                          inputFormatters: [mascaraCelular],
+                                                          onTap: (){},
+                                                          style: TextStyle(
+                                                            color: cores.corLaranjaSF,
+                                                            fontSize: 16,
+                                                          ),
+                                                          decoration: InputDecoration(
+                                                            counterText: "",
+                                                            contentPadding: EdgeInsets.fromLTRB(8, 0, 8, 0),
+                                                            labelText: "Celular",
+                                                            labelStyle: TextStyle(color: cores.corMarromSF),
+                                                            enabledBorder: OutlineInputBorder(
+                                                              borderSide: const BorderSide(width: 2, color: const Color(0xff3d2314)),
+                                                              borderRadius: BorderRadius.circular(15),
+                                                            ),
+                                                            focusedBorder: OutlineInputBorder(
+                                                              borderSide: const BorderSide(width: 2, color: const Color(0xff3d2314)),
+                                                              borderRadius: BorderRadius.circular(15),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      )
+                                                  )
+                                              )
+                                          )
                                         ],
                                       ),
                                       Row(
@@ -1719,7 +1805,7 @@ class _AdicionarState extends State<Adicionar> {
                                           ]
                                       ),
                                       Padding(
-                                        padding: EdgeInsets.fromLTRB(0, 16, 0, 16),
+                                        padding: EdgeInsets.fromLTRB(0, 8, 0, 8),
                                         child: Row(
                                           mainAxisAlignment: MainAxisAlignment.center,
                                           children: <Widget>[
@@ -1842,7 +1928,7 @@ class _AdicionarState extends State<Adicionar> {
                                         children: <Widget>[
                                           TextButton(
                                               onPressed: () {
-                                                if(_ctlNomeBalc.text.isEmpty || _ctlNomeBalc.text == ""){
+                                                if(_ctlNomeBalc.text.isEmpty || _ctlNomeBalc.text == "" || _ctlCeluBalc.text.isEmpty || _ctlCeluBalc.text == ""){
                                                   final snackBar = SnackBar(
                                                     content: const Text('Preenchimento dos campos incorreto. Verifique e tente novamente.', style: TextStyle(color: Colors.white),),
                                                     backgroundColor: cores.corLaranjaSF,
@@ -1878,6 +1964,7 @@ class _AdicionarState extends State<Adicionar> {
                                                   {
                                                     _obs_cozinha = _controllerObsCozinha.text;
                                                     _blc_nome_cli = _ctlNomeBalc.text;
+                                                    _blc_celu_cli = _ctlCeluBalc.text;
                                                     Navigator.of(context).pop();
                                                     _registra_itens_balcao();
                                                   }
@@ -2457,9 +2544,156 @@ class _AdicionarState extends State<Adicionar> {
       ),
     );
   }
+  _gerar_dialogo_add_itens_balcao()
+  {
+    Pedido pedido_alterar = Pedido();
+    pedido_alterar = _listaPedidos.firstWhere((it) => it.identificador == widget._identificador_pedido);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => ScaffoldMessenger(
+        child: Builder(
+            builder: (context) => WillPopScope(
+                child: Scaffold(
+                  backgroundColor: Colors.transparent,
+                  body: Dialog(
+                      elevation: 6,
+                      insetAnimationDuration: Duration(seconds: 1),
+                      insetAnimationCurve: Curves.slowMiddle,
+                      insetPadding: EdgeInsets.all(16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)), //this right here
+                      child: StatefulBuilder(
+                        builder: (BuildContext context, StateSetter setState){
+                          return Container(
+                              width: 300,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisSize: MainAxisSize.min,
+                                children: <Widget>[
+                                  Padding(
+                                      padding: EdgeInsets.fromLTRB(0, 16, 0, 0),
+                                      child: AutoSizeText(
+                                        'Inserir Itens: Pedido de ' + pedido_alterar.nome_cliente.toString(),
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(fontSize: 16, color: CustomColors().corMarromSF, fontWeight: FontWeight.bold),
+                                        maxLines: 1,
+                                        minFontSize: 12,
+                                        overflow: TextOverflow.ellipsis,
+                                      )
+                                  ),
+                                  Text('\n'+ NumberFormat.simpleCurrency(locale: 'pt_BR').format(_calcula_total_inserir_mesa()), textAlign: TextAlign.center, style: TextStyle(fontSize: 24, color: Colors.red, fontWeight: FontWeight.w700),),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: <Widget>[
+                                      TextButton(
+                                          onPressed: () {
+                                            Navigator.of(context).pop();
+                                            _atualiza_itens_balcao(pedido_alterar);
+                                          },
+                                          child: const Text('Confirmar',style: TextStyle(fontSize: 16, color: const Color(0xffff6900), fontWeight: FontWeight.bold))
+                                      ),
+                                      TextButton(
+                                          onPressed: () {
+                                            // Close the dialog
+                                            Navigator.of(context).pop();
+                                          },
+                                          child: const Text('Cancelar', style: TextStyle(fontSize: 16, color: const Color(0xff3d2314), fontWeight: FontWeight.bold))
+                                      )
+                                    ],
+                                  )
+                                ],
+                              )
+                          );
+                        },
+                      )
+                  ),
+                ),
+                onWillPop: () async => false
+            )
+        ),
+      ),
+    );
+  }
+
+  _gerar_dialogo_add_itens_entrega()
+  {
+    Pedido pedido_alterar = Pedido();
+    pedido_alterar = _listaPedidos.firstWhere((it) => it.identificador == widget._identificador_pedido);
+    _taxa_atualizar_pedido = _calcula_valor_taxa_reimprimir(pedido_alterar.total);
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => ScaffoldMessenger(
+        child: Builder(
+            builder: (context) => WillPopScope(
+                child: Scaffold(
+                  backgroundColor: Colors.transparent,
+                  body: Dialog(
+                      elevation: 6,
+                      insetAnimationDuration: Duration(seconds: 1),
+                      insetAnimationCurve: Curves.slowMiddle,
+                      insetPadding: EdgeInsets.all(16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)), //this right here
+                      child: StatefulBuilder(
+                        builder: (BuildContext context, StateSetter setState){
+                          return Container(
+                              width: 300,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisSize: MainAxisSize.min,
+                                children: <Widget>[
+                                  Padding(
+                                    padding: EdgeInsets.fromLTRB(0, 16, 0, 0),
+                                    child: AutoSizeText(
+                                      'Inserir Itens: Pedido de ' + pedido_alterar.nome_cliente.toString(),
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(fontSize: 16, color: CustomColors().corMarromSF, fontWeight: FontWeight.bold),
+                                      maxLines: 1,
+                                      minFontSize: 12,
+                                      overflow: TextOverflow.ellipsis,
+                                    )
+                                  ),
+                                  Text('\n'+ NumberFormat.simpleCurrency(locale: 'pt_BR').format(_calcula_total_inserir_mesa()), textAlign: TextAlign.center, style: TextStyle(fontSize: 24, color: Colors.red, fontWeight: FontWeight.w700),),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: <Widget>[
+                                      TextButton(
+                                          onPressed: () {
+                                            Navigator.of(context).pop();
+                                            _atualiza_itens_entrega(pedido_alterar);
+                                          },
+                                          child: const Text('Confirmar',style: TextStyle(fontSize: 16, color: const Color(0xffff6900), fontWeight: FontWeight.bold))
+                                      ),
+                                      TextButton(
+                                          onPressed: () {
+                                            // Close the dialog
+                                            Navigator.of(context).pop();
+                                          },
+                                          child: const Text('Cancelar', style: TextStyle(fontSize: 16, color: const Color(0xff3d2314), fontWeight: FontWeight.bold))
+                                      )
+                                    ],
+                                  )
+                                ],
+                              )
+                          );
+                        },
+                      )
+                  ),
+                ),
+                onWillPop: () async => false
+            )
+        ),
+      ),
+    );
+  }
 
   _registra_itens_mesa() async{
     mostrarDialogoSalvando();
+    //realizamos a impressão dos dados
+    if(_param_imprimir == 0)
+      _imprimir_pedido();
     //recuperamos infos mesa
     Mesa _mesa_salvar = Mesa();
     Mesa _mesa_recuperada = Mesa();
@@ -2537,10 +2771,31 @@ class _AdicionarState extends State<Adicionar> {
         final json = _listaItensExistentesMesa[i-1].toJson();
         await ref.child(_id_registrar.toString()).set(json);
       }
+    //excluimos o ultimo registro de impressao
+    await FirebaseDatabase.instance.ref().child('imprimir').child(widget._numMesa.toString()).remove();
+    //registramos os itens na tabela de reimpressão de ultimo pedido
+    final ref1 = FirebaseDatabase.instance.ref("imprimir/" + widget._numMesa.toString());
+    for(int i = 0; i <= _listaItensMesa.length; i++)
+    {
+      if(i == 0)
+        {
+          ItemMesa obs = ItemMesa();
+          int _id_registrar = i;
+          obs.desc_item = _controllerObsCozinha.text.toString();
+          obs.id_item = 0;
+          final json = obs.toJson();
+          await ref1.child(_id_registrar.toString()).set(json);
+        }
+      else{
+        int _id_registrar = i;
+        final json = _listaItensMesa[i-1].toJson();
+        await ref1.child(_id_registrar.toString()).set(json);
+      }
+    }
     //geramos um identificador para essa mesa, para auxiliar nos relatórios do sistema
     DateTime now = DateTime.now();
     String data = DateFormat('dd-MM-yyyy kk:mm:ss').format(now);
-    String dma = data.substring(0, 9);
+    String dma = data.substring(0, 10);
     String hms = data.substring(11, 19);
     String id_registro = "M-" + widget._numMesa.toString() + "-D-" + dma + "-H-" + hms;
     //registramos o total atual da mesa
@@ -2558,10 +2813,6 @@ class _AdicionarState extends State<Adicionar> {
     final json = _mesa_salvar.toJson();
     final ref_mesa = FirebaseDatabase.instance.ref("mesas/" + _mesa_salvar.numero.toString());
     await ref_mesa.set(json);
-    //realizamos a impressão dos dados
-    if(_param_imprimir == 0)
-      _imprimir_pedido();
-
     //voltamos à tela das mesas
     Navigator.of(context).pop();
     Navigator.push(
@@ -2577,7 +2828,7 @@ class _AdicionarState extends State<Adicionar> {
     //geramos um identificador
     DateTime now = DateTime.now();
     String data = DateFormat('dd-MM-yyyy kk:mm:ss').format(now);
-    String dma = data.substring(0, 9);
+    String dma = data.substring(0, 10);
     String hms = data.substring(11, 19);
     String id_registro = "M-0-D-" + dma + "-H-" + hms;
     //registramos o total atual da mesa
@@ -2585,36 +2836,164 @@ class _AdicionarState extends State<Adicionar> {
     //realizamos a impressão dos dados
     if(_param_imprimir == 0)
       _imprimir_pedido_balcao();
-    //registro de comanda
-    Comanda _pagamento_salvar = Comanda();
-    _pagamento_salvar.id = id_registro;
-    _pagamento_salvar.total = _total_inserir_balcao;
-    _pagamento_salvar.mesa = 0;
-    _pagamento_salvar.data = data;
-    _pagamento_salvar.pagamento = _tipo_pagamento;
-    _pagamento_salvar.fechamento = 1;
-    //registro itens comanda
-    for(int i = 1; i <= _listaItensMesa.length; i++)
-    {
-      ItemComanda _item_salvar = ItemComanda();
-      _item_salvar.id = id_registro;//id_registro;
-      _item_salvar.mesa = widget._numMesa;
-      _item_salvar.data = data;
-      _item_salvar.nome = _listaItensMesa[i-1].desc_item;
-      _item_salvar.valor = _listaItensMesa[i-1].valor_tot;
-      _item_salvar.qtd = _listaItensMesa [i-1].qtd;
-      _listaItensMesaTotalRelatorio.add(_item_salvar);
+    //registro do pedido
+    Pedido _novo_pedido = Pedido();
+    if(_listaPedidos.length > 0)
+      _novo_pedido.id_pedido = _listaPedidos.last.id_pedido + 1;
+    else
+      _novo_pedido.id_pedido = 1;
+    _novo_pedido.tipo = 0;
+    _novo_pedido.data = data;
+    _novo_pedido.total = _total_inserir_balcao;
+    _novo_pedido.identificador = id_registro;
+    _novo_pedido.pagamento = _tipo_pagamento;
+    _novo_pedido.nome_cliente = _blc_nome_cli;
+    _novo_pedido.celular_cliente = _blc_celu_cli;
+    _novo_pedido.endereco_cliente = "-";
+    _novo_pedido.obs = _obs_cozinha;
+
+    _listaItensExistentesMesa.clear();
+    final refItemPedido = FirebaseDatabase.instance.ref();
+    final snapshot1 = await refItemPedido.child("itens-pedido/" + id_registro.toString()).get();
+    if (snapshot1.exists) {
+      final json = snapshot1.value as List;
+      for(DataSnapshot ds in snapshot1.children)
+      {
+        ItemMesa _itemLista = ItemMesa();
+        final json = ds.value as Map<dynamic, dynamic>;
+        _itemLista = ItemMesa.fromJson(json);
+        _listaItensExistentesMesa.add(_itemLista);
+      }
     }
-    for(int i = 1; i <= _listaItensMesaTotalRelatorio.length; i++)
+    //verificação de id
+    int _ult_id_registrado = 0;
+    if(_listaItensExistentesMesa.length > 0)
+      _ult_id_registrado = _listaItensExistentesMesa.last.id_item;
+
+    //verificamos se já existem itens inseridos iguais aos que estão sendo inseridos para unir as quantidades e valores
+    if(_listaItensExistentesMesa.length > 0)
     {
-      final json0 = _listaItensMesaTotalRelatorio[i-1].toJson();
-      String chave_firebase = i.toString() + "_" + _listaItensMesaTotalRelatorio[i-1].id;
-      final ref_comanda_item = FirebaseDatabase.instance.ref("fechado-itens/" + chave_firebase);
-      await ref_comanda_item.set(json0);
+      for(int i = 0; i < _listaItensMesa.length; i++)
+      {
+        String desc_item_atual = _listaItensMesa[i].desc_item;
+        String obs_item_atual = _listaItensMesa[i].obs_adici;
+        int indice_encontrado = -1;
+        for(int y = 0; y < _listaItensExistentesMesa.length; y++)
+        {
+          if(_listaItensExistentesMesa[y].desc_item == desc_item_atual && _listaItensExistentesMesa[y].obs_adici == obs_item_atual)
+          {
+            indice_encontrado = y;
+          }
+        }
+        if(indice_encontrado != -1)
+        {//o item que está sendo inserido já existe na lista, portanto, somamos sua quantidade e valor ao já existente
+          ItemMesa _ja_existe = _listaItensExistentesMesa[indice_encontrado];
+          int _indice = _listaItensExistentesMesa.indexOf(_ja_existe);
+          num _novo_valor = _ja_existe.valor_tot + _listaItensMesa[i].valor_tot;
+          int _nova_qtd = _ja_existe.qtd + _listaItensMesa[i].qtd;
+          _ja_existe.valor_tot = _novo_valor;
+          _ja_existe.qtd = _nova_qtd;
+          _listaItensExistentesMesa[_indice] = _ja_existe;
+        }
+        else{
+          _listaItensMesa[i].id_item = _ult_id_registrado + 1;
+          _listaItensExistentesMesa.add(_listaItensMesa[i]);
+        }
+      }
     }
-    final json1 = _pagamento_salvar.toJson();
-    final ref_comanda = FirebaseDatabase.instance.ref('fechado/' + id_registro);
-    await ref_comanda.set(json1);
+    else
+    {
+      for(int i = 0; i < _listaItensMesa.length; i++)
+      {
+        _listaItensMesa[i].id_item = _ult_id_registrado + 1 + i;
+        _listaItensExistentesMesa.add(_listaItensMesa[i]);
+      }
+    }
+    //limpar itens da mesa para atualizar na sequencia
+    await FirebaseDatabase.instance.ref().child('itens-pedido').child(id_registro.toString()).remove();
+    //registramos os itens na mesa
+    final ref = FirebaseDatabase.instance.ref("itens-pedido/" + id_registro.toString());
+    for(int i = 1; i <= _listaItensExistentesMesa.length; i++)
+    {
+      int _id_registrar = i;
+      final json = _listaItensExistentesMesa[i-1].toJson();
+      await ref.child(_id_registrar.toString()).set(json);
+    }
+    //salvamos o pedido
+    final json = _novo_pedido.toJson();
+    final ref_balc = FirebaseDatabase.instance.ref('pedidos/' + _novo_pedido.id_pedido.toString());
+    await ref_balc.set(json);
+    //voltamos à tela das mesas
+    Navigator.of(context).pop();
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => Mesas()
+        )
+    );
+  }
+
+  _atualiza_itens_balcao(Pedido pedido_alterar) async{
+    mostrarDialogoSalvando();
+    //verificação de id
+    int _ult_id_registrado = 0;
+    if(_listaItensExistentesPedido.length > 0)
+      _ult_id_registrado = _listaItensExistentesPedido.last.id_item;
+    //verificamos se já existem itens inseridos iguais aos que estão sendo inseridos para unir as quantidades e valores
+    if(_listaItensExistentesPedido.length > 0)
+    {
+      for(int i = 0; i < _listaItensMesa.length; i++)
+      {
+        String desc_item_atual = _listaItensMesa[i].desc_item;
+        String obs_item_atual = _listaItensMesa[i].obs_adici;
+        int indice_encontrado = -1;
+        for(int y = 0; y < _listaItensExistentesPedido.length; y++)
+        {
+          if(_listaItensExistentesPedido[y].desc_item == desc_item_atual && _listaItensExistentesPedido[y].obs_adici == obs_item_atual)
+          {
+            indice_encontrado = y;
+          }
+        }
+        if(indice_encontrado != -1)
+        {//o item que está sendo inserido já existe na lista, portanto, somamos sua quantidade e valor ao já existente
+          ItemMesa _ja_existe = _listaItensExistentesPedido[indice_encontrado];
+          int _indice = _listaItensExistentesPedido.indexOf(_ja_existe);
+          num _novo_valor = _ja_existe.valor_tot + _listaItensMesa[i].valor_tot;
+          int _nova_qtd = _ja_existe.qtd + _listaItensMesa[i].qtd;
+          _ja_existe.valor_tot = _novo_valor;
+          _ja_existe.qtd = _nova_qtd;
+          _listaItensExistentesPedido[_indice] = _ja_existe;
+        }
+        else{
+          _listaItensMesa[i].id_item = _ult_id_registrado + 1;
+          _listaItensExistentesPedido.add(_listaItensMesa[i]);
+        }
+      }
+    }
+    else
+    {
+      for(int i = 0; i < _listaItensMesa.length; i++)
+      {
+        _listaItensMesa[i].id_item = _ult_id_registrado + 1 + i;
+        _listaItensExistentesPedido.add(_listaItensMesa[i]);
+      }
+    }
+    //realizamos a impressão dos dados
+    _imprimir_pedido_balcao_alterar(pedido_alterar);
+    //limpar itens da mesa para atualizar na sequencia
+    await FirebaseDatabase.instance.ref().child('itens-pedido').child(widget._identificador_pedido.toString()).remove();
+    //registramos os itens na mesa
+    final ref = FirebaseDatabase.instance.ref("itens-pedido/" + widget._identificador_pedido.toString());
+    for(int i = 1; i <= _listaItensExistentesPedido.length; i++)
+    {
+      int _id_registrar = i;
+      final json = _listaItensExistentesPedido[i-1].toJson();
+      await ref.child(_id_registrar.toString()).set(json);
+    }
+    //atualizamos o total atual do pedido
+    num _total_atualizar_pedido = _calcula_total_itens_existentes_pedido();
+    final ref1 = FirebaseDatabase.instance.ref("pedidos/" + pedido_alterar.id_pedido.toString());
+    await ref1.child("total").set(_total_atualizar_pedido);
     //voltamos à tela das mesas
     Navigator.of(context).pop();
     Navigator.push(
@@ -2635,7 +3014,7 @@ class _AdicionarState extends State<Adicionar> {
     //geramos um identificador para essa mesa, para auxiliar nos relatórios do sistema
     DateTime now = DateTime.now();
     String data = DateFormat('dd-MM-yyyy kk:mm:ss').format(now);
-    String dma = data.substring(0, 9);
+    String dma = data.substring(0, 10);
     String hms = data.substring(11, 19);
     String id_registro = "M-0-D-" + dma + "-H-" + hms;
     _nova_ent.cliente = id_registro;
@@ -2644,40 +3023,167 @@ class _AdicionarState extends State<Adicionar> {
     //realizamos a impressão dos dados
     if(_param_imprimir == 0)
       _imprimir_pedido_entrega();
-    //registro de comanda
-    Comanda _pagamento_salvar = Comanda();
-    _pagamento_salvar.id = id_registro;
-    _pagamento_salvar.total = _total_inserir_entrega;
-    _pagamento_salvar.mesa = 0;
-    _pagamento_salvar.data = data;
-    _pagamento_salvar.pagamento = _tipo_pagamento;
-    _pagamento_salvar.fechamento = 1;
-    //registro itens comanda
-    for(int i = 1; i <= _listaItensMesa.length; i++)
-    {
-      ItemComanda _item_salvar = ItemComanda();
-      _item_salvar.id = id_registro;//id_registro;
-      _item_salvar.mesa = widget._numMesa;
-      _item_salvar.data = data;
-      _item_salvar.nome = _listaItensMesa[i-1].desc_item;
-      _item_salvar.valor = _listaItensMesa[i-1].valor_tot;
-      _item_salvar.qtd = _listaItensMesa [i-1].qtd;
-      _listaItensMesaTotalRelatorio.add(_item_salvar);
+    //endereço do cliente
+    String _endereco_salvar = _ctlRua.text.toString() + "\nN " + _ctlNumero.text.toString() + "\n" + _ctlBairro.text.toString() + "\n" + _ctlRef.text.toString();
+    //registro do pedido
+    Pedido _novo_pedido = Pedido();
+    if(_listaPedidos.length > 0)
+      _novo_pedido.id_pedido = _listaPedidos.last.id_pedido + 1;
+    else
+      _novo_pedido.id_pedido = 1;
+    _novo_pedido.tipo = 1;
+    _novo_pedido.data = data;
+    _novo_pedido.total = _total_inserir_entrega;
+    _novo_pedido.identificador = id_registro;
+    _novo_pedido.pagamento = _tipo_pagamento;
+    _novo_pedido.nome_cliente = _ent_nome_cli;
+    _novo_pedido.celular_cliente = _ent_celu_cli;
+    _novo_pedido.endereco_cliente = _endereco_salvar;
+    _novo_pedido.obs = _obs_cozinha;
+
+    _listaItensExistentesMesa.clear();
+    final refItemPedido = FirebaseDatabase.instance.ref();
+    final snapshot1 = await refItemPedido.child("itens-pedido/" + id_registro.toString()).get();
+    if (snapshot1.exists) {
+      final json = snapshot1.value as List;
+      for(DataSnapshot ds in snapshot1.children)
+      {
+        ItemMesa _itemLista = ItemMesa();
+        final json = ds.value as Map<dynamic, dynamic>;
+        _itemLista = ItemMesa.fromJson(json);
+        _listaItensExistentesMesa.add(_itemLista);
+      }
     }
-    for(int i = 1; i <= _listaItensMesaTotalRelatorio.length; i++)
+    //verificação de id
+    int _ult_id_registrado = 0;
+    if(_listaItensExistentesMesa.length > 0)
+      _ult_id_registrado = _listaItensExistentesMesa.last.id_item;
+
+    //verificamos se já existem itens inseridos iguais aos que estão sendo inseridos para unir as quantidades e valores
+    if(_listaItensExistentesMesa.length > 0)
     {
-      final json0 = _listaItensMesaTotalRelatorio[i-1].toJson();
-      String chave_firebase = i.toString() + "_" + _listaItensMesaTotalRelatorio[i-1].id;
-      final ref_comanda_item = FirebaseDatabase.instance.ref("fechado-itens/" + chave_firebase);
-      await ref_comanda_item.set(json0);
+      for(int i = 0; i < _listaItensMesa.length; i++)
+      {
+        String desc_item_atual = _listaItensMesa[i].desc_item;
+        String obs_item_atual = _listaItensMesa[i].obs_adici;
+        int indice_encontrado = -1;
+        for(int y = 0; y < _listaItensExistentesMesa.length; y++)
+        {
+          if(_listaItensExistentesMesa[y].desc_item == desc_item_atual && _listaItensExistentesMesa[y].obs_adici == obs_item_atual)
+          {
+            indice_encontrado = y;
+          }
+        }
+        if(indice_encontrado != -1)
+        {//o item que está sendo inserido já existe na lista, portanto, somamos sua quantidade e valor ao já existente
+          ItemMesa _ja_existe = _listaItensExistentesMesa[indice_encontrado];
+          int _indice = _listaItensExistentesMesa.indexOf(_ja_existe);
+          num _novo_valor = _ja_existe.valor_tot + _listaItensMesa[i].valor_tot;
+          int _nova_qtd = _ja_existe.qtd + _listaItensMesa[i].qtd;
+          _ja_existe.valor_tot = _novo_valor;
+          _ja_existe.qtd = _nova_qtd;
+          _listaItensExistentesMesa[_indice] = _ja_existe;
+        }
+        else{
+          _listaItensMesa[i].id_item = _ult_id_registrado + 1;
+          _listaItensExistentesMesa.add(_listaItensMesa[i]);
+        }
+      }
     }
-    final json1 = _pagamento_salvar.toJson();
-    final ref_comanda = FirebaseDatabase.instance.ref('fechado/' + id_registro);
-    await ref_comanda.set(json1);
-    //registro entrega
-    final json2 = _nova_ent.toJson();
-    final ref_entrega = FirebaseDatabase.instance.ref('entrega/' + id_registro);
-    await ref_entrega.set(json2);
+    else
+    {
+      for(int i = 0; i < _listaItensMesa.length; i++)
+      {
+        _listaItensMesa[i].id_item = _ult_id_registrado + 1 + i;
+        _listaItensExistentesMesa.add(_listaItensMesa[i]);
+      }
+    }
+    //limpar itens da mesa para atualizar na sequencia
+    await FirebaseDatabase.instance.ref().child('itens-pedido').child(id_registro.toString()).remove();
+    //registramos os itens na mesa
+    final ref = FirebaseDatabase.instance.ref("itens-pedido/" + id_registro.toString());
+    for(int i = 1; i <= _listaItensExistentesMesa.length; i++)
+    {
+      int _id_registrar = i;
+      final json = _listaItensExistentesMesa[i-1].toJson();
+      await ref.child(_id_registrar.toString()).set(json);
+    }
+    //salvamos o pedido
+    final json = _novo_pedido.toJson();
+    final ref_balc = FirebaseDatabase.instance.ref('pedidos/' + _novo_pedido.id_pedido.toString());
+    await ref_balc.set(json);
+    //voltamos à tela das mesas
+    Navigator.of(context).pop();
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => Mesas()
+        )
+    );
+  }
+
+  _atualiza_itens_entrega(Pedido pedido_alterar) async{
+    mostrarDialogoSalvando();
+    //verificação de id
+    int _ult_id_registrado = 0;
+    if(_listaItensExistentesPedido.length > 0)
+      _ult_id_registrado = _listaItensExistentesPedido.last.id_item;
+    //verificamos se já existem itens inseridos iguais aos que estão sendo inseridos para unir as quantidades e valores
+    if(_listaItensExistentesPedido.length > 0)
+    {
+      for(int i = 0; i < _listaItensMesa.length; i++)
+      {
+        String desc_item_atual = _listaItensMesa[i].desc_item;
+        String obs_item_atual = _listaItensMesa[i].obs_adici;
+        int indice_encontrado = -1;
+        for(int y = 0; y < _listaItensExistentesPedido.length; y++)
+        {
+          if(_listaItensExistentesPedido[y].desc_item == desc_item_atual && _listaItensExistentesPedido[y].obs_adici == obs_item_atual)
+          {
+            indice_encontrado = y;
+          }
+        }
+        if(indice_encontrado != -1)
+        {//o item que está sendo inserido já existe na lista, portanto, somamos sua quantidade e valor ao já existente
+          ItemMesa _ja_existe = _listaItensExistentesPedido[indice_encontrado];
+          int _indice = _listaItensExistentesPedido.indexOf(_ja_existe);
+          num _novo_valor = _ja_existe.valor_tot + _listaItensMesa[i].valor_tot;
+          int _nova_qtd = _ja_existe.qtd + _listaItensMesa[i].qtd;
+          _ja_existe.valor_tot = _novo_valor;
+          _ja_existe.qtd = _nova_qtd;
+          _listaItensExistentesPedido[_indice] = _ja_existe;
+        }
+        else{
+          _listaItensMesa[i].id_item = _ult_id_registrado + 1;
+          _listaItensExistentesPedido.add(_listaItensMesa[i]);
+        }
+      }
+    }
+    else
+    {
+      for(int i = 0; i < _listaItensMesa.length; i++)
+      {
+        _listaItensMesa[i].id_item = _ult_id_registrado + 1 + i;
+        _listaItensExistentesPedido.add(_listaItensMesa[i]);
+      }
+    }
+    num _total_atualizar_pedido = _calcula_total_itens_existentes_pedido() + _taxa_atualizar_pedido;
+    pedido_alterar.total = _total_atualizar_pedido;
+    //realizamos a impressão dos dados
+    _imprimir_pedido_entrega_alterar(pedido_alterar);
+    //limpar itens da mesa para atualizar na sequencia
+    await FirebaseDatabase.instance.ref().child('itens-pedido').child(widget._identificador_pedido.toString()).remove();
+    //registramos os itens na mesa
+    final ref = FirebaseDatabase.instance.ref("itens-pedido/" + widget._identificador_pedido.toString());
+    for(int i = 1; i <= _listaItensExistentesPedido.length; i++)
+    {
+      int _id_registrar = i;
+      final json = _listaItensExistentesPedido[i-1].toJson();
+      await ref.child(_id_registrar.toString()).set(json);
+    }
+    //atualizamos o total atual do pedido
+    final ref1 = FirebaseDatabase.instance.ref("pedidos/" + pedido_alterar.id_pedido.toString());
+    await ref1.child("total").set(_total_atualizar_pedido);
     //voltamos à tela das mesas
     Navigator.of(context).pop();
     Navigator.push(
@@ -2711,6 +3217,23 @@ class _AdicionarState extends State<Adicionar> {
         _total_inserir_mesa = _total_inserir_mesa + it.valor_tot;
       }
     return _total_inserir_mesa;
+  }
+
+  num _calcula_total_itens_existentes_pedido()
+  {
+    num _total_inserir_mesa = 0;
+    for(ItemMesa it in _listaItensExistentesPedido)
+    {
+      _total_inserir_mesa = _total_inserir_mesa + it.valor_tot;
+    }
+    return _total_inserir_mesa;
+  }
+
+  num _calcula_valor_taxa_reimprimir(num total)
+  {
+    num _total_itens = _calcula_total_itens_existentes_pedido();
+    num _taxa = total - _total_itens;
+    return _taxa;
   }
 
   mostrarDialogoSalvando()
@@ -2972,6 +3495,7 @@ class _AdicionarState extends State<Adicionar> {
         ));
     printer.text("----------------------------------------");
     printer.text(_blc_nome_cli, styles: PosStyles(bold: true,align: PosAlign.left, height: PosTextSize.size2, width: PosTextSize.size2));
+    printer.text(_blc_celu_cli, styles: PosStyles(bold: true,align: PosAlign.left, height: PosTextSize.size2, width: PosTextSize.size2));
     printer.text("----------------------------------------");
     printer.row([
       PosColumn(
@@ -3089,6 +3613,182 @@ class _AdicionarState extends State<Adicionar> {
     if(!_obs_cozinha.isEmpty && _obs_cozinha != "")
     {
       printer.text("Obs.: " + _obs_cozinha.toString(),
+          styles: PosStyles(
+              height: PosTextSize.size1,
+              width: PosTextSize.size1,
+              align: PosAlign.left,
+              bold: true
+          ));
+      printer.text("----------------------------------------");
+    }
+    printer.text("Powered by SSoft",
+        styles: PosStyles(
+            align: PosAlign.center
+        ));
+
+    //VERIFICAR A QUANTIDADE DE VIAS PARA IMPRIMIR
+    printer.feed(2);
+    printer.cut();
+  }
+
+  _imprimir_pedido_balcao_alterar(Pedido pedido_alterar) async
+  {
+    const PaperSize paper = PaperSize.mm80;
+    final profile = await CapabilityProfile.load();
+    final printer = NetworkPrinter(paper, profile);
+
+    final PosPrintResult res = await printer.connect(widget._ip_imp.toString(), port: 9100); //10.253.0.98
+
+    if (res == PosPrintResult.success) {
+      _gerar_impressao_balcao_alterar(printer, pedido_alterar);
+      printer.disconnect();
+    }
+
+    print('Print result: ${res.msg}');
+  }
+
+  Future<void> _gerar_impressao_balcao_alterar(NetworkPrinter printer, Pedido pedido_alterar) async {
+
+    String data = pedido_alterar.data.substring(11, 19);
+    String forma_pag = "";
+
+    if(pedido_alterar.pagamento == 0)
+      forma_pag = "DINHEIRO";
+    if(pedido_alterar.pagamento == 1)
+      forma_pag = "CARTAO";
+    if(pedido_alterar.pagamento == 2)
+      forma_pag = "PIX";
+    //Cabeçalho da impressão
+    printer.text("Retirada no Balcao",
+        styles: PosStyles(
+            height: PosTextSize.size2,
+            width: PosTextSize.size2,
+            align: PosAlign.center
+        ));
+    printer.text("Hora: " + data,
+        styles: PosStyles(
+            align: PosAlign.center
+        ));
+    printer.text("----------------------------------------");
+    printer.text(pedido_alterar.nome_cliente, styles: PosStyles(bold: true,align: PosAlign.left, height: PosTextSize.size2, width: PosTextSize.size2));
+    printer.text(pedido_alterar.celular_cliente, styles: PosStyles(bold: true,align: PosAlign.left, height: PosTextSize.size2, width: PosTextSize.size2));
+    printer.text("----------------------------------------");
+    printer.row([
+      PosColumn(
+        text: 'QTD',
+        width: 1,
+        styles: PosStyles(align: PosAlign.left, underline: true, bold: true),
+      ),
+      PosColumn(
+        text: 'ITEM',
+        width: 11,
+        styles: PosStyles(align: PosAlign.center, underline: true, bold: true),
+      ),
+    ]);
+    String _linha1 = "";
+    String _linha2 = "";
+    int _parametro_num_char = 0;
+    for(int i = 0; i < _listaItensExistentesPedido.length; i++)
+    {
+      _parametro_num_char = 0;
+      String item_desc = _remove_diacritics(_listaItensExistentesPedido[i].desc_item);
+      String item_mostrar = item_desc;
+      if(item_desc.length > 19){
+        _linha1 = item_desc.substring(0, 19);
+        _linha2 = item_desc.substring(19, item_desc.length);
+        _parametro_num_char = 1;
+
+        printer.row([
+          PosColumn(
+            text: _listaItensExistentesPedido[i].qtd.toString(),
+            width: 1,
+            styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
+          ),
+          PosColumn(
+            text: _remove_diacritics(_linha1),
+            //text: _remove_diacritics(_listaItensMesa[i].desc_item),
+            width: 11,
+            styles: PosStyles(align: PosAlign.left, height: PosTextSize.size2, width: PosTextSize.size2),
+          ),
+        ]);
+      }
+      else{
+        printer.row([
+          PosColumn(
+            text: _listaItensExistentesPedido[i].qtd.toString(),
+            width: 1,
+            styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
+          ),
+          PosColumn(
+            text: item_mostrar,
+            //text: _remove_diacritics(_listaItensMesa[i].desc_item),
+            width: 11,
+            styles: PosStyles(align: PosAlign.left, height: PosTextSize.size2, width: PosTextSize.size2),
+          ),
+        ]);
+      }
+
+      if(_parametro_num_char == 1)
+      {
+        printer.row([
+          PosColumn(
+            text: " ",
+            width: 1,
+            styles: PosStyles(align: PosAlign.left, bold: true),
+          ),
+          PosColumn(
+            text: _remove_diacritics(_linha2),
+            width: 11,
+            styles: PosStyles(align: PosAlign.left, height: PosTextSize.size2, width: PosTextSize.size2),
+          ),
+        ]);
+      }
+      if(!_listaItensExistentesPedido[i].obs_adici.isEmpty && _listaItensExistentesPedido[i].obs_adici != "")
+      {
+        printer.row([
+          PosColumn(
+            text: "",
+            width: 1,
+            styles: PosStyles(align: PosAlign.left, bold: true),
+          ),
+          PosColumn(
+            text: _remove_diacritics(_listaItensExistentesPedido[i].obs_adici).replaceAll("\n", ", "),
+            width: 11,
+            styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
+          ),
+        ]);
+      }
+      printer.text("----------------------------------------");
+    }
+    String _valor_mostrar = "";
+    _valor_mostrar = NumberFormat.simpleCurrency(locale: 'pt_BR').format(_calcula_total_inserir_mesa());
+    printer.row([
+      PosColumn(
+          text: 'TOTAL',
+          width: 4,
+          styles: PosStyles(
+            height: PosTextSize.size2,
+            width: PosTextSize.size2,
+          )),
+      PosColumn(
+          text: _valor_mostrar,
+          width: 8,
+          styles: PosStyles(
+            align: PosAlign.left,
+            height: PosTextSize.size2,
+            width: PosTextSize.size2,
+          )),
+    ]);
+    printer.text("Forma de Pagamento: " + forma_pag,
+        styles: PosStyles(
+            height: PosTextSize.size1,
+            width: PosTextSize.size1,
+            align: PosAlign.left
+        ));
+    printer.text("========================================");
+    if(!pedido_alterar.obs.isEmpty && pedido_alterar.obs != "")
+    {
+      printer.text("Obs.: " + pedido_alterar.obs.toString(),
           styles: PosStyles(
               height: PosTextSize.size1,
               width: PosTextSize.size1,
@@ -3278,6 +3978,185 @@ class _AdicionarState extends State<Adicionar> {
     if(!_obs_cozinha.isEmpty && _obs_cozinha != "")
     {
       printer.text("Obs.: " + _obs_cozinha.toString(),
+          styles: PosStyles(
+              height: PosTextSize.size1,
+              width: PosTextSize.size1,
+              align: PosAlign.left,
+              bold: true
+          ));
+      printer.text("----------------------------------------");
+    }
+    printer.text("Powered by SSoft",
+        styles: PosStyles(
+            align: PosAlign.center
+        ));
+
+    //VERIFICAR A QUANTIDADE DE VIAS PARA IMPRIMIR
+    printer.feed(2);
+    printer.cut();
+  }
+
+  _imprimir_pedido_entrega_alterar(Pedido pedido_alterar) async
+  {
+    const PaperSize paper = PaperSize.mm80;
+    final profile = await CapabilityProfile.load();
+    final printer = NetworkPrinter(paper, profile);
+
+    final PosPrintResult res = await printer.connect(widget._ip_imp.toString(), port: 9100); //10.253.0.98
+
+    if (res == PosPrintResult.success) {
+      _gerar_impressao_entrega_alterar(printer, pedido_alterar);
+      printer.disconnect();
+    }
+
+    print('Print result: ${res.msg}');
+  }
+
+  Future<void> _gerar_impressao_entrega_alterar(NetworkPrinter printer, Pedido dados_pedido) async {
+
+    String data = dados_pedido.data.substring(11, 19);
+    String forma_pag = "";
+
+    if(_tipo_pagamento == 0)
+      forma_pag = "DINHEIRO";
+    if(_tipo_pagamento == 1)
+      forma_pag = "CARTAO";
+    if(_tipo_pagamento == 2)
+      forma_pag = "PIX";
+    //Cabeçalho da impressão
+    printer.text("Entrega",
+        styles: PosStyles(
+            height: PosTextSize.size2,
+            width: PosTextSize.size2,
+            align: PosAlign.center
+        ));
+    printer.text("Hora: " + data,
+        styles: PosStyles(
+            align: PosAlign.center
+        ));
+    printer.text("----------------------------------------");
+    printer.text(dados_pedido.nome_cliente, styles: PosStyles(bold: true,align: PosAlign.left));
+    printer.text(dados_pedido.celular_cliente, styles: PosStyles(bold: true,align: PosAlign.left));
+    printer.text(dados_pedido.endereco_cliente, styles: PosStyles(bold: true,align: PosAlign.left));
+    printer.text("----------------------------------------");
+    printer.row([
+      PosColumn(
+        text: 'QTD',
+        width: 1,
+        styles: PosStyles(align: PosAlign.left, underline: true, bold: true),
+      ),
+      PosColumn(
+        text: 'ITEM',
+        width: 11,
+        styles: PosStyles(align: PosAlign.center, underline: true, bold: true),
+      ),
+    ]);
+    String _linha1 = "";
+    String _linha2 = "";
+    int _parametro_num_char = 0;
+    for(int i = 0; i < _listaItensExistentesPedido.length; i++)
+    {
+      _parametro_num_char = 0;
+      String item_desc = _remove_diacritics(_listaItensExistentesPedido[i].desc_item);
+      String item_mostrar = item_desc;
+      if(item_desc.length > 19){
+        _linha1 = item_desc.substring(0, 19);
+        _linha2 = item_desc.substring(19, item_desc.length);
+        _parametro_num_char = 1;
+
+        printer.row([
+          PosColumn(
+            text: _listaItensExistentesPedido[i].qtd.toString(),
+            width: 1,
+            styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
+          ),
+          PosColumn(
+            text: _remove_diacritics(_linha1),
+            //text: _remove_diacritics(_listaItensMesa[i].desc_item),
+            width: 11,
+            styles: PosStyles(align: PosAlign.left, height: PosTextSize.size2, width: PosTextSize.size2),
+          ),
+        ]);
+      }
+      else{
+        printer.row([
+          PosColumn(
+            text: _listaItensExistentesPedido[i].qtd.toString(),
+            width: 1,
+            styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
+          ),
+          PosColumn(
+            text: item_mostrar,
+            width: 11,
+            styles: PosStyles(align: PosAlign.left, height: PosTextSize.size2, width: PosTextSize.size2),
+          ),
+        ]);
+      }
+
+      if(_parametro_num_char == 1)
+      {
+        printer.row([
+          PosColumn(
+            text: " ",
+            width: 1,
+            styles: PosStyles(align: PosAlign.left, bold: true),
+          ),
+          PosColumn(
+            text: _remove_diacritics(_linha2),
+            width: 11,
+            styles: PosStyles(align: PosAlign.left, height: PosTextSize.size2, width: PosTextSize.size2),
+          ),
+        ]);
+      }
+      if(!_listaItensExistentesPedido[i].obs_adici.isEmpty && _listaItensExistentesPedido[i].obs_adici != "")
+      {
+        printer.row([
+          PosColumn(
+            text: "",
+            width: 1,
+            styles: PosStyles(align: PosAlign.left, bold: true),
+          ),
+          PosColumn(
+            text: _remove_diacritics(_listaItensExistentesPedido[i].obs_adici).replaceAll("\n", ", "),
+            width: 11,
+            styles: PosStyles(align: PosAlign.left, bold: true, height: PosTextSize.size2, width: PosTextSize.size2),
+          ),
+        ]);
+      }
+      printer.text("----------------------------------------");
+    }
+    String _valor_mostrar = "";
+    String _valor_taxa_mostrar = "";
+    _valor_mostrar = NumberFormat.simpleCurrency(locale: 'pt_BR').format(dados_pedido.total);
+    _valor_taxa_mostrar = NumberFormat.simpleCurrency(locale: 'pt_BR').format(_calcula_valor_taxa_reimprimir(dados_pedido.total));
+    printer.text('Taxa:' + _valor_taxa_mostrar);
+    printer.row([
+      PosColumn(
+          text: 'TOTAL',
+          width: 4,
+          styles: PosStyles(
+            height: PosTextSize.size2,
+            width: PosTextSize.size2,
+          )),
+      PosColumn(
+          text: _valor_mostrar,
+          width: 8,
+          styles: PosStyles(
+            align: PosAlign.left,
+            height: PosTextSize.size2,
+            width: PosTextSize.size2,
+          )),
+    ]);
+    printer.text("Forma de Pagamento: " + forma_pag,
+        styles: PosStyles(
+            height: PosTextSize.size1,
+            width: PosTextSize.size1,
+            align: PosAlign.left
+        ));
+    printer.text("========================================");
+    if(!dados_pedido.obs.isEmpty && dados_pedido.obs != "")
+    {
+      printer.text("Obs.: " + dados_pedido.obs.toString(),
           styles: PosStyles(
               height: PosTextSize.size1,
               width: PosTextSize.size1,

@@ -811,6 +811,8 @@ class _FecharState extends State<Fechar> {
     final json = _mesa.toJson();
     final ref_mesa = FirebaseDatabase.instance.ref("mesas/" + widget._numMesa.toString());
     await ref_mesa.set(json);
+    //excluimos o ultimo registro de impressao
+    await FirebaseDatabase.instance.ref().child('imprimir').child(widget._numMesa.toString()).remove();
     //não há mais itens. Fechamos a tela.
     Navigator.of(context).pop();
     Navigator.push(
