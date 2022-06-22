@@ -226,7 +226,7 @@ class _AdicionarState extends State<Adicionar> {
   void initState() {
     // TODO: implement initState
     super.initState();
-    if(widget._parametro_tipo_adicionar == 0)
+    if(widget._parametro_tipo_adicionar == 0 || widget._parametro_tipo_adicionar == 9) //9 = adicionar item ao fechar conta
       _titulo_tela = "Adicionar Itens à Mesa " + widget._numMesa.toString();
     if(widget._parametro_tipo_adicionar == 1){
       _titulo_tela = "Itens para Entrega";
@@ -1322,6 +1322,9 @@ class _AdicionarState extends State<Adicionar> {
             if(widget._parametro_tipo_adicionar == 3){
               _gerar_dialogo_add_itens_entrega();
             }
+            if(widget._parametro_tipo_adicionar == 9){
+              _gerar_dialogo_registrar_fechando_conta();
+            }
           }
           else{
             final snackBar = SnackBar(
@@ -1682,6 +1685,75 @@ class _AdicionarState extends State<Adicionar> {
       ),
     );
   }
+
+  _gerar_dialogo_registrar_fechando_conta()
+  {
+    _param_imprimir == 1;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => ScaffoldMessenger(
+        child: Builder(
+            builder: (context) => WillPopScope(
+                child: Scaffold(
+                  backgroundColor: Colors.transparent,
+                  body: Dialog(
+                      elevation: 6,
+                      insetAnimationDuration: Duration(seconds: 1),
+                      insetAnimationCurve: Curves.slowMiddle,
+                      insetPadding: EdgeInsets.all(16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)), //this right here
+                      child: StatefulBuilder(
+                        builder: (BuildContext context, StateSetter setState){
+                          return Container(
+                              width: 300,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisSize: MainAxisSize.min,
+                                children: <Widget>[
+                                  Padding(
+                                    padding: EdgeInsets.fromLTRB(0, 16, 0, 0),
+                                    child: Text(
+                                      'Inserir Itens: Mesa  ' + widget._numMesa.toString(),
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(fontSize: 16, color: CustomColors().corMarromSF, fontWeight: FontWeight.bold),),
+                                  ),
+                                  Text('\n'+ NumberFormat.simpleCurrency(locale: 'pt_BR').format(_calcula_total_inserir_mesa()), textAlign: TextAlign.center, style: TextStyle(fontSize: 24, color: Colors.red, fontWeight: FontWeight.w700),),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: <Widget>[
+                                      TextButton(
+                                          onPressed: () {
+                                            _obs_cozinha = _controllerObsCozinha.text;
+                                            Navigator.of(context).pop();
+                                            _registra_itens_mesa();
+                                          },
+                                          child: const Text('Confirmar',style: TextStyle(fontSize: 16, color: const Color(0xffff6900), fontWeight: FontWeight.bold))
+                                      ),
+                                      TextButton(
+                                          onPressed: () {
+                                            // Close the dialog
+                                            Navigator.of(context).pop();
+                                          },
+                                          child: const Text('Cancelar', style: TextStyle(fontSize: 16, color: const Color(0xff3d2314), fontWeight: FontWeight.bold))
+                                      )
+                                    ],
+                                  )
+                                ],
+                              )
+                          );
+                        },
+                      )
+                  ),
+                ),
+                onWillPop: () async => false
+            )
+        ),
+      ),
+    );
+  }
+
   _gerar_dialogo_registrar_balcao()
   {
     showDialog(
@@ -2815,12 +2887,17 @@ class _AdicionarState extends State<Adicionar> {
     await ref_mesa.set(json);
     //voltamos à tela das mesas
     Navigator.of(context).pop();
-    Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (context) => Mesas()
-        )
-    );
+    if(widget._parametro_tipo_adicionar == 9){
+      Navigator.of(context).pop();
+    }
+    else {
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => Mesas()
+          )
+      );
+    }
   }
 
   _registra_itens_balcao() async{
@@ -3238,6 +3315,15 @@ class _AdicionarState extends State<Adicionar> {
 
   mostrarDialogoSalvando()
   {
+    String texto_mostrar = "";
+
+    if(widget._parametro_tipo_adicionar == 9){
+      texto_mostrar = "Salvando itens...";
+    }
+    else{
+      texto_mostrar = "Salvando itens e imprimindo...";
+    }
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -3264,7 +3350,7 @@ class _AdicionarState extends State<Adicionar> {
                               width: 300,
                               alignment: Alignment.center,
                               child: Text(
-                                'Salvando itens e imprimindo na cozinha...',
+                                texto_mostrar,
                                 style: TextStyle(color: cores.corMarromSF),
                               )
                           ),

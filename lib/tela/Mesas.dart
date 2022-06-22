@@ -60,6 +60,7 @@ class _MesasState extends State<Mesas> {
   TextEditingController _controllerQtdVias = TextEditingController();
   TextEditingController _controllerIpImp = TextEditingController();
   bool _visibility = false;
+  bool _visibilitySemItens = false;
 
   int _parametro_tipo_adicionar = -1; //0 = MESA | 1 = ENTREGA | 2 = BALCÃO | 3 = ENTREGA (editar)  | 4 = BALCÃO (editar)
 
@@ -74,6 +75,9 @@ class _MesasState extends State<Mesas> {
       _parametros.nome_garcom = _nome;
       _parametros.qtd_colunas = _qtd;
       _visibility = true;
+
+      if(_listaPedidos.length <= 0)
+        _visibilitySemItens = true;
     });
   }
 
@@ -415,7 +419,23 @@ class _MesasState extends State<Mesas> {
                           )
                         ],
                       )
-                  )
+                  ),
+                  Visibility(
+                      visible: _visibilitySemItens,
+                      child: Expanded(
+                          child: Align(
+                            alignment: Alignment.center,
+                            child: Text(
+                              "Sem pedidos abertos",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.black26,
+                                fontSize: (24),
+                              ),
+                            ),
+                          )
+                      )
+                  ),
                 ],
               )
             ],

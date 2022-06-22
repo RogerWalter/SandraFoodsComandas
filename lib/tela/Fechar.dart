@@ -117,6 +117,29 @@ class _FecharState extends State<Fechar> {
         appBar: AppBar(
           backgroundColor: CustomColors().corMarromSF,
           title: Text("Fechar Conta da Mesa " + widget._numMesa.toString(), style: TextStyle(color: Colors.white)),
+          actions:[
+            Visibility(
+            child: IconButton(
+              icon: const Icon
+                (Icons.add, color: Color(0xffff6900),),
+              tooltip: 'Editar',
+              onPressed: () {
+                setState(() {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => Adicionar(widget._numMesa, "", widget._ip_impressora, widget._qtd_imp, 9, "")
+                      )
+                  ).then((value) => {
+                    this.setState(() {
+                      _recuperar_itens_mesa();
+                    })
+                  });
+                  });
+               },
+              ),
+            ),
+          ]
         ),
         body: Container(
           child: Column(
